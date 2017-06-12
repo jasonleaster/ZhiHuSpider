@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.jasonleaster.spiderz.dao.IUserProfileDAO">
+
+    <sql id="Base_Column_List" >
+            userId                ,
+            urlToken              ,
+            name                  ,
+            gender                ,
+            headline              ,
+            voteUpCount           ,
+            favoritedCount        ,
+            followerCount         ,
+            followingCount        ,
+            answerCount           ,
+            articlesCount         ,
+            questionCount         ,
+            logsCount             ,
+            thankedCount          ,
+            description           ,
+            followingQuestionCount,
+            followingColumnsCount
+    </sql>
+
+    <insert id="insertUsersProfileInfo"  parameterType="org.jasonleaster.spiderz.model.UserProfileInfo">
+        INSERT INTO tbl_users (  <include refid="Base_Column_List" /> )
+        values
+        <foreach collection="profiles" item="profile" index="index" open="(" separator="),("  close=")">
+            #{profile.userId                } ,
+            #{profile.urlToken              } ,
+            #{profile.name                  } ,
+            #{profile.gender                } ,
+            #{profile.headline              } ,
+            #{profile.voteUpCount           } ,
+            #{profile.favoritedCount        } ,
+            #{profile.followerCount         } ,
+            #{profile.followingCount        } ,
+            #{profile.answerCount           } ,
+            #{profile.articlesCount         } ,
+            #{profile.questionCount         } ,
+            #{profile.logsCount             } ,
+            #{profile.thankedCount          } ,
+            #{profile.description           } ,
+            #{profile.followingQuestionCount},
+            #{profile.followingColumnsCount }
+        </foreach>
+    </insert>
+
+</mapper>

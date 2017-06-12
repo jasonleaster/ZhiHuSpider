@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:tx="http://www.springframework.org/schema/tx" xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:context="http://www.springframework.org/schema/context" xsi:schemaLocation="http://www.springframework.org/schema/beans
+http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+http://www.springframework.org/schema/tx
+http://www.springframework.org/schema/tx/spring-tx-3.0.xsd
+http://www.springframework.org/schema/aop
+http://www.springframework.org/schema/aop/spring-aop-3.0.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+
+
+    <!-- 配置数据库相关参数properties属性：${url} -->
+    <context:property-placeholder location="classpath:jdbc.properties" />
+    <!-- Datasource bean for production -->
+
+    <!-- 数据库链接池 -->
+    <!--
+        Although these data sources(#DrivermanagerDataSource, #SimpleDriverDataSource and #SingleConnectionDataSource)
+        are great for small applications and running in development, you should seriously consider
+        the implications of using them in a production application. Because #SingleConnectionDataSource has
+        one and only one database connection to work with, it doesn’t work well in multithreaded applications
+        and is best limited to use in testing. At the same time, even though DriverDataSource and
+        SimpleDriverDataSource are both capable of supporting multiple threads, they incur a performance
+        cost for creating a new connection each time a connection is requested.
+
+        ****Because of these limitations, I strongly recommend using pooled data sources. ****
+
+        You can use another datasource like APache Commons DBCP, C3P0 and BoneCP as the pooled data source.
+        In this configuration, I choosed #PooledDataSource as the datasource in MyBatis.
+    -->
+    <!-- Bad Practice
+	<bean name="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="url" value="${jdbc_url}" />
+		<property name="username" value="${jdbc_username}" />
+		<property name="password" value="${jdbc_password}" />
+		<property name="driverClassName" value="com.mysql.jdbc.Driver"/>
+	</bean>
+	 -->
+
+    <!-- Recommended Way to configure a datasource -->
+    <bean name="dataSource" class="org.apache.ibatis.datasource.pooled.PooledDataSource">
+        <property name="url" value="${jdbc_url}" />
+        <property name="username" value="${jdbc_username}" />
+        <property name="password" value="${jdbc_password}" />
+        <property name="driver" value="com.mysql.jdbc.Driver"/>
+        <property name="poolMaximumActiveConnections" value="${poolMaximumActiveConnections}"/>
+        <property name="poolMaximumIdleConnections"   value="${poolMaximumIdleConnections}"/>
+    </bean>
+
+
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <!-- 注入数据库连接池 -->
+        <property name="dataSource" ref="dataSource"/>
+        <!-- 扫描sql配置文件：mapper需要的xml文件 -->
+        <property name="mapperLocations" value="classpath:mapper/*.xml" />
+    </bean>
+
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <property name="basePackage" value="org.jasonleaster.spiderz.dao" />
+        <property name="sqlSessionFactoryBeanName" value="sqlSessionFactory" />
+    </bean>
+
+    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource" />
+    </bean>
+
+</beans>

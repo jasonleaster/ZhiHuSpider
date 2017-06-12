@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.jasonleaster.spiderz.dao.IUserRelationshipDAO">
+
+    <resultMap id="BaseResultMap" type="org.jasonleaster.spiderz.model.UserRelationship" >
+        <result column="fromUserId"         property="fromUserId"    jdbcType="CHAR" />
+        <result column="toUserId"           property="toUserId"      jdbcType="VARCHAR" />
+        <result column="fromUrlToken"       property="fromUrlToken"  jdbcType="CHAR" />
+        <result column="toUrlToken"         property="toUrlToken"    jdbcType="VARCHAR" />
+        <result column="name"               property="name"          jdbcType="VARCHAR" />
+        <result column="gender"             property="gender"        jdbcType="TINYINT" />
+        <result column="isFollowed"         property="isFollowed"    jdbcType="TINYINT" />
+        <result column="isFollowing"        property="isFollowing"   jdbcType="TINYINT" />
+        <result column="isAdvertiser"       property="isAdvertiser"  jdbcType="TINYINT" />
+        <result column="isOrg"              property="isOrg"         jdbcType="TINYINT" />
+        <result column="answerCount"        property="answerCount"   jdbcType="INTEGER" />
+        <result column="followerCount"      property="followerCount" jdbcType="INTEGER" />
+        <result column="articlesCount"      property="articlesCount" jdbcType="INTEGER" />
+        <result column="headline"           property="headline"      jdbcType="VARCHAR" />
+        <result column="url"                property="url"           jdbcType="VARCHAR" />
+        <result column="avatarUrlTemplate"  property="avatarUrlTemplate" jdbcType="VARCHAR" />
+        <result column="avatarUrl"          property="avatarUrl" jdbcType="VARCHAR" />
+    </resultMap>
+
+    <sql id="Base_Column_List" >
+        fromUserId,
+        toUserId,
+        fromUrlToken,
+        toUrlToken,
+        name,
+        gender,
+        isFollowed,
+        isFollowing,
+        isAdvertiser,
+        isOrg,
+        answerCount,
+        followerCount,
+        articlesCount,
+        headline,
+        url,
+        avatarUrlTemplate,
+        avatarUrl
+    </sql>
+
+    <insert id="insertUsersRelationships" parameterType="org.jasonleaster.spiderz.model.UserRelationship">
+        INSERT IGNORE INTO tbl_relationships (  <include refid="Base_Column_List" /> )
+        VALUES
+        <foreach collection="userRelationships" item="relationship" index="index" open="(" separator="),("  close=")">
+            #{relationship.fromUserId   },
+            #{relationship.toUserId     },
+            #{relationship.fromUrlToken },
+            #{relationship.toUrlToken   },
+            #{relationship.name         },
+            #{relationship.gender       },
+            #{relationship.isFollowed   },
+            #{relationship.isFollowing  },
+            #{relationship.isAdvertiser },
+            #{relationship.isOrg        },
+            #{relationship.answerCount  },
+            #{relationship.followerCount},
+            #{relationship.articlesCount},
+            #{relationship.headline     },
+            #{relationship.url          },
+            #{relationship.avatarUrlTemplate },
+            #{relationship.avatarUrl         }
+        </foreach>
+    </insert>
+
+    <select id="filterExistedRelationshipStartNode" parameterType="java.lang.String" resultType="java.lang.String">
+        SELECT fromUrlToken FROM tbl_relationships
+        WHERE fromUrlToken IN
+        <choose>
+            <when test="toUrlTokens == null || toUrlTokens.isEmpty()">
+                ('')
+            </when>
+            <otherwise>
+                <foreach collection="toUrlTokens" item="urlToken" index="index" open="(" separator=","  close=")">
+                    #{urlToken}
+                </foreach>
+            </otherwise>
+        </choose>
+        GROUP BY fromUrlToken
+    </select>
+
+
+</mapper>
