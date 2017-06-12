@@ -18,5 +18,8 @@
 *.tar.gz
 *.rar
 
+# IDE 相关文件删除，保持代码的干净
+*.iml
+
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
