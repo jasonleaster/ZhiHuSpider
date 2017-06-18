@@ -1,7 +1,11 @@
 package org.jasonleaster.spiderz.processor;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
 import org.apache.log4j.Logger;
 import org.jasonleaster.spiderz.constants.RedisConstants;
 import org.jasonleaster.spiderz.model.PageInfo;
@@ -16,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import us.codecraft.webmagic.Page;
 import us.codecraft.webmagic.Site;
+import us.codecraft.webmagic.Spider.Status;
 import us.codecraft.webmagic.processor.PageProcessor;
 import us.codecraft.webmagic.selector.Json;
 
@@ -29,6 +34,8 @@ import us.codecraft.webmagic.selector.Json;
 public class ZhihuUserFollowersProcessor implements PageProcessor {
 
     private static final Logger log = Logger.getLogger(ZhihuUserFollowersProcessor.class);
+
+    private static final Set<Integer> acceptableStatus = new HashSet<>();
 
     /**
      * 队列的最大长度
@@ -62,9 +69,13 @@ public class ZhihuUserFollowersProcessor implements PageProcessor {
         .addHeader("authorization", "oauth c3cef7c66a1843f8b3a9e6a1e3160e20")
         .addHeader("Host", "www.zhihu.com")
         .addHeader("Pragma", "no-cache")
-        .addHeader("x-udid", "AIBCvvXSzguPTuq9ctFwIhT0Wy9XppYISL8=");
+        .addHeader("x-udid", "AIBCvvXSzguPTuq9ctFwIhT0Wy9XppYISL8=")
+        .setAcceptStatCode(acceptableStatus);
 
     public ZhihuUserFollowersProcessor() {
+        acceptableStatus.add(HttpStatus.SC_BAD_REQUEST);
+        acceptableStatus.add(HttpStatus.SC_OK);
+        acceptableStatus.add(HttpStatus.SC_NOT_FOUND);
     }
 
     /**
@@ -83,8 +94,28 @@ public class ZhihuUserFollowersProcessor implements PageProcessor {
     @Override
     public void process(Page page) {
 
+        // 从该页面的url中提取该页面的urlToken
         String url = page.getUrl().get();
         String fromUrlToken = UrlFactory.getTokenFromUrl(url);
+
+        int statusCode = page.getStatusCode();
+
+        if (statusCode != HttpStatus.SC_OK){
+
+            //在用restful 接口测试工具测试的时候部分被关闭账号的用户会出现404的情况
+            //不过，程序爬取调试运行时还没遇到过
+            if (statusCode == HttpStatus.SC_NOT_FOUND){
+                log.info("##ZhihuUserFollowersProcessor.process"
+                    + "NOT FOUND URL: " + url);
+                return;
+            }
+
+            // 并尝试把这个分页查询url重新入队
+            List<String> urls = new ArrayList<>();
+            urls.add(url);
+            addPaginationUrlsToQueue(urls);
+            return;
+        }
 
         Json json = page.getJson();
 
@@ -138,7 +169,13 @@ public class ZhihuUserFollowersProcessor implements PageProcessor {
 
         storeUserProfileInfo(relationships);
 
-        addMessageIntoUrlTokenQueue(serializedObjects);
+        addMessageIntoUrlTokenQueue(serializedObjects,
+            RedisConstants.dbIndexOfUrlTokens,
+            RedisConstants.urlTokenQueueForUserProfile);
+
+        addMessageIntoUrlTokenQueue(serializedObjects,
+            RedisConstants.dbIndexOfUrlTokens,
+            RedisConstants.urlTokenQueueForFollowerPagination);
     }
 
     @Override
@@ -160,7 +197,7 @@ public class ZhihuUserFollowersProcessor implements PageProcessor {
      *
      * @param pageInfo 某一页的分页信息
      */
-    private synchronized void addAllRestPaginationUrlsIntoQueue(String fromUrlToken,
+    private void addAllRestPaginationUrlsIntoQueue(String fromUrlToken,
         PageInfo pageInfo) {
 
         List<String> urls = new ArrayList<>();
@@ -172,6 +209,10 @@ public class ZhihuUserFollowersProcessor implements PageProcessor {
             urls.add(paginationUrl);
         }
 
+        addPaginationUrlsToQueue(urls);
+    }
+
+    private synchronized void addPaginationUrlsToQueue(List<String> urls){
         JedisPoolUtils.getInstance().addMessagesIntoQueue(
             RedisConstants.dbIndexOfPaginationUrls,
             RedisConstants.messageQueueNameForPaginationUrls,
@@ -180,13 +221,10 @@ public class ZhihuUserFollowersProcessor implements PageProcessor {
 
     /**
      * @param serializedObjects 单独的一个synchronized block 保证对于客户端来说整个过程
-     * 只有一个线程往消息队列里面加数据， 避免竞争情况的出现
+     * 只有一个线程往消息队列里面加数据, 避免竞争情况的出现
      */
-    private synchronized void addMessageIntoUrlTokenQueue(List<String> serializedObjects) {
-
-        long queueLen = JedisPoolUtils.getInstance().getListLen(
-            RedisConstants.dbIndexOfUrlTokens,
-            RedisConstants.urlTokenQueueForUserProfile);
+    private synchronized void addMessageIntoUrlTokenQueue(List<String> serializedObjects, int dbIndex, String queueName) {
+        long queueLen = JedisPoolUtils.getInstance().getListLen(dbIndex, queueName);
 
         int expectedToAddLen = serializedObjects.size();
         if (queueLen + expectedToAddLen > limitedQueueLen) {
@@ -194,24 +232,8 @@ public class ZhihuUserFollowersProcessor implements PageProcessor {
             // TODO 不能塞下的数据写入数据库直接入库
         } else {
             // 将urlTokens分别放入两个不同的队列
-            JedisPoolUtils.getInstance().addMessagesIntoQueue(
-                RedisConstants.dbIndexOfUrlTokens,
-                RedisConstants.urlTokenQueueForUserProfile,
-                limitedQueueLen, serializedObjects);
-        }
-
-        queueLen = JedisPoolUtils.getInstance().getListLen(
-            RedisConstants.dbIndexOfUrlTokens,
-            RedisConstants.urlTokenQueueForFollowerPagination);
-
-        if (queueLen + expectedToAddLen > limitedQueueLen){
-            // 功能未实现之前暂时直接丢弃
-            // TODO 不能塞下的数据写入数据库直接入库
-        }else{
-            JedisPoolUtils.getInstance().addMessagesIntoQueue(
-                RedisConstants.dbIndexOfUrlTokens,
-                RedisConstants.urlTokenQueueForFollowerPagination,
-                limitedQueueLen, serializedObjects);
+            JedisPoolUtils.getInstance()
+                .addMessagesIntoQueue(dbIndex, queueName, limitedQueueLen, serializedObjects);
         }
     }
 
