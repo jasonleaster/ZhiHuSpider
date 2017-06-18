@@ -6,7 +6,7 @@
 
     <groupId>org.jasonleaster.spiderz</groupId>
     <artifactId>ZhiHuSpider</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0</version>
 
     <properties>
 
@@ -19,6 +19,7 @@
         <webmagic.version>0.6.1</webmagic.version>
         <jackson.version>2.4.1</jackson.version>
         <redis.version>2.9.0</redis.version>
+        <apache.commons.version>2.5</apache.commons.version>
         <log4j.version>2.6.2</log4j.version>
         <junit.version>4.11</junit.version>
     </properties>
@@ -138,6 +139,12 @@
         </dependency>
 
         <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>${apache.commons.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
             <version>1.2.17</version>
@@ -150,6 +157,55 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <build>
+
+
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>2.6</version>
+                <configuration>
+                    <!-- 把生成的jar包放在bin目录下（和其他所有依赖的jar包做区分） -->
+                    <outputDirectory>${project.build.directory}</outputDirectory>
+                    <archive>
+                        <manifest>
+                            <mainClass>org.jasonleaster.spiderz.RelationshipCrawler</mainClass>
+                            <addClasspath>true</addClasspath>
+                            <classpathPrefix>lib/</classpathPrefix>
+                        </manifest>
+                    </archive>
+                    <excludes>
+                        <exclude>mapper/</exclude>
+                        <exclude>spring/</exclude>
+                        <exclude>SQL/</exclude>
+                        <exclude>*.properties</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+
+            <!-- 打包插件 -->
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>3.0.0</version>
+                <configuration>
+                    <descriptors>
+                        <descriptor>src/assembly/package.xml</descriptor>
+                    </descriptors>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 
     <repositories><!-- 代码库 -->
         <repository>
