@@ -1,8 +1,13 @@
 package org.jasonleaster.spiderz;
 
+import java.io.InputStream;
+import java.util.Properties;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.jasonleaster.spiderz.constants.RedisConstants;
 import org.jasonleaster.spiderz.url.UrlFactory;
 import org.jasonleaster.spiderz.utils.JedisPoolUtils;
+import org.jasonleaster.spiderz.utils.Log4jUtils;
 import org.jasonleaster.spiderz.utils.SpringContextUtils;
 import org.springframework.context.annotation.ComponentScan;
 import us.codecraft.webmagic.Request;
@@ -23,6 +28,8 @@ public class RelationshipCrawler {
     private static final int defaultThreadForCrawler = 3;
 
     public static void main(String[] args) {
+
+        Log4jUtils.InitLog4jConfig();
 
         //初始化Spring的上下文
         SpringContextUtils.getContext();

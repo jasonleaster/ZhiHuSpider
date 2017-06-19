@@ -15,7 +15,7 @@
         </fileSet>
         <fileSet>
             <directory>src/main/resources</directory>
-            <outputDirectory>/</outputDirectory>
+            <outputDirectory>config</outputDirectory>
         </fileSet>
     </fileSets>
     <dependencySets>

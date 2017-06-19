@@ -3,6 +3,7 @@ package org.jasonleaster.spiderz;
 import org.jasonleaster.spiderz.constants.RedisConstants;
 import org.jasonleaster.spiderz.url.UrlFactory;
 import org.jasonleaster.spiderz.utils.JedisPoolUtils;
+import org.jasonleaster.spiderz.utils.Log4jUtils;
 import org.jasonleaster.spiderz.utils.SpringContextUtils;
 import us.codecraft.webmagic.Request;
 import us.codecraft.webmagic.Spider;
@@ -20,6 +21,9 @@ public class UserProfileCrawler {
     private static final int defaultThreadForCrawler = 10;
 
     public static void main(String[] args) {
+
+        Log4jUtils.InitLog4jConfig();
+
         //初始化Spring的上下文
         SpringContextUtils.getContext();
 
