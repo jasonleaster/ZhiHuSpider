@@ -59,16 +59,18 @@ CREATE TABLE tbl_relationships (
     PRIMARY KEY (fromUrlToken, toUrlToken)
 ) ENGINE = InnoDB DEFAULT CHARSET=utf8 COMMENT='用户关系表';
 
-DROP TABLE if EXISTS tbl_userprofile_message_urltoken;
-CREATE TABLE tbl_userprofile_message_urltoken (
+DROP TABLE if EXISTS tbl_mq_urltoken_userprofile;
+CREATE TABLE tbl_mq_urltoken_userprofile (
     messageId BIGINT      NOT NULL  AUTO_INCREMENT    COMMENT '自增长id',
-    urlToken  VARCHAR(50) NOT NULL                      COMMENT '用户查询使用的id参数，通常就是第一个用户名',
+    message   VARCHAR(200) NOT NULL                     COMMENT '用户查询使用的id参数，通常就是第一个用户名',
+    existed   TINYINT(1)  NOT NULL  DEFAULT 1          COMMENT '逻辑删除位，1表示该消息存在, 2表示该消息不存在',
     PRIMARY KEY (messageId)
 ) ENGINE = InnoDB DEFAULT CHARSET=utf8 COMMENT='用户详情消息队列溢出数据持久化表';
 
-DROP TABLE if EXISTS tbl_userfollower_message_urltoken;
-CREATE TABLE tbl_userfollower_message_urltoken (
-    messageId BIGINT      NOT NULL AUTO_INCREMENT COMMENT '自增长id',
-    urlToken  VARCHAR(50) NOT NULL                 COMMENT '用户查询使用的id参数，通常就是第一个用户名',
+DROP TABLE if EXISTS tbl_mq_urltoken_userfollowers;
+CREATE TABLE tbl_mq_urltoken_userfollowers (
+    messageId BIGINT      NOT NULL  AUTO_INCREMENT    COMMENT '自增长id',
+    urlToken  VARCHAR(200) NOT NULL                     COMMENT '用户查询使用的id参数，通常就是第一个用户名',
+    existed   TINYINT(1)  NOT NULL  DEFAULT 1          COMMENT '逻辑删除位，1表示该消息存在, 2表示该消息不存在',
     PRIMARY KEY (messageId)
 ) ENGINE = InnoDB DEFAULT CHARSET=utf8 COMMENT='用户follower消息队列溢出数据持久化表';
